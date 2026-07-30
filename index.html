@@ -138,7 +138,7 @@
     }
 
     /* ==========================================
-       2. iOS 6 CAMERA UI & LOW-RES VIEWFINDER
+       2. iOS 6 CAMERA UI & UNFOCUSED VIEWFINDER
        ========================================== */
     .camera-container {
       position: relative;
@@ -166,14 +166,14 @@
       opacity: 0;
     }
 
-    /* 🔥 저화질 감성을 위해 블러 효과와 대비/노이즈감 추가 */
+    /* 🔥 초점이 맞지 않는 렌즈 효과 (Soft Focus Blur + Soft Bloom) */
     #video {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      /* 약간의 화질 저하 효과 (소량의 블러 + 아이폰4 센서 특유의 채도/대비) */
-      filter: blur(0.6px) brightness(1.05) contrast(1.1) saturate(1.15) sepia(0.08);
-      transition: transform 0.1s ease;
+      /* 초점이 나간 효과: 부드러운 블러 + 약간의 빛 퍼짐 */
+      filter: blur(2.2px) brightness(1.06) contrast(0.95) saturate(1.05);
+      transition: transform 0.1s ease, filter 0.3s ease;
     }
 
     #video.mirrored-preview {
@@ -184,7 +184,7 @@
       transform: scaleX(1);
     }
 
-    /* 노이즈/비네팅 레이어로 옛날 폰카 감성 연출 */
+    /* 비네팅 레이어 */
     .vignette-overlay {
       position: absolute;
       top: 0;
@@ -192,7 +192,7 @@
       width: 100%;
       height: 100%;
       pointer-events: none;
-      box-shadow: inset 0 0 60px rgba(0,0,0,0.45);
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.35);
       z-index: 2;
     }
 
@@ -1094,12 +1094,11 @@
           this.currentStream.getTracks().forEach(track => track.stop());
         }
 
-        /* 🔥 옛날 아이폰 폰카 감성을 내기 위해 낮은 해상도(320~480p) 요청 */
         const constraints = {
           video: {
             facingMode: { exact: this.facingMode },
-            width: { ideal: 480, max: 640 },
-            height: { ideal: 360, max: 480 }
+            width: { ideal: 1280 },
+            height: { ideal: 960 }
           },
           audio: withAudio
         };
@@ -1114,7 +1113,7 @@
         } catch (err) {
           try {
             const fallbackConstraints = {
-              video: { facingMode: this.facingMode, width: { ideal: 480 }, height: { ideal: 360 } },
+              video: { facingMode: this.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
               audio: withAudio
             };
             this.currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
@@ -1220,8 +1219,8 @@
           const video = this.camera.videoElement;
           const hiddenCanvas = document.getElementById('hiddenCanvas');
 
-          const videoWidth = video.videoWidth || 640;
-          const videoHeight = video.videoHeight || 480;
+          const videoWidth = video.videoWidth || 1280;
+          const videoHeight = video.videoHeight || 960;
 
           let cropWidth, cropHeight, cropX, cropY;
           const targetRatio = 3 / 4;
@@ -1239,9 +1238,8 @@
             cropY = (videoHeight - cropHeight) / 2;
           }
 
-          /* 🔥 저화질 픽셀 감성을 내기 위해 캔버스 해상도를 360x480으로 작게 제한 */
-          hiddenCanvas.width = 360;
-          hiddenCanvas.height = 480;
+          hiddenCanvas.width = Math.round(cropWidth);
+          hiddenCanvas.height = Math.round(cropHeight);
 
           const ctx = hiddenCanvas.getContext('2d');
           ctx.save();
@@ -1254,8 +1252,8 @@
             ctx.scale(-1, 1);
           }
 
-          // 아이폰 폰카 색감 + 픽셀 뭉개짐(노이즈) 효과
-          ctx.filter = "brightness(1.04) contrast(1.08) saturate(1.1) sepia(0.06)";
+          /* 🔥 초점이 흐려진 렌즈 불일치(Out of Focus) 필터링 */
+          ctx.filter = "blur(2.2px) brightness(1.06) contrast(0.95) saturate(1.05)";
 
           ctx.drawImage(
             video,
@@ -1264,10 +1262,7 @@
           );
           ctx.restore();
 
-          // 옛날 디지털 카메라 느낌의 노이즈 픽셀 입히기
-          this.applyRetroNoise(ctx, hiddenCanvas.width, hiddenCanvas.height);
-
-          const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.85); // 압축률을 살짝 낮춰 픽셀감 추가
+          const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.92);
           this.capturedPhotos.push(dataUrl);
 
           this.ui.animateFlyToThumbnail(dataUrl, () => {
@@ -1275,19 +1270,6 @@
             resolve();
           });
         });
-      }
-
-      /* 옛날 디카 노이즈 효과 */
-      applyRetroNoise(ctx, width, height) {
-        const imgData = ctx.getImageData(0, 0, width, height);
-        const data = imgData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          const noise = (Math.random() - 0.5) * 12;
-          data[i] = Math.min(255, Math.max(0, data[i] + noise));
-          data[i+1] = Math.min(255, Math.max(0, data[i+1] + noise));
-          data[i+2] = Math.min(255, Math.max(0, data[i+2] + noise));
-        }
-        ctx.putImageData(imgData, 0, 0);
       }
 
       saveSelectedPhotos() {
