@@ -30,6 +30,7 @@
       overflow-x: hidden;
     }
 
+    /* Device Switcher Controls */
     .device-switcher {
       display: flex;
       gap: 12px;
@@ -53,6 +54,7 @@
       border-color: #0d3866;
     }
 
+    /* iPhone 4 Frame (Hardware Container) */
     .iphone-4-frame {
       width: 380px;
       height: 740px;
@@ -75,6 +77,7 @@
         0 25px 50px rgba(0, 0, 0, 0.8);
     }
 
+    /* Hardware Ear Speaker */
     .iphone-4-frame::before {
       content: '';
       position: absolute;
@@ -92,6 +95,7 @@
       background: #d0d0d0;
     }
 
+    /* Home Button */
     .home-button {
       position: absolute;
       bottom: 12px;
@@ -125,6 +129,7 @@
       border-color: #aaa;
     }
 
+    /* Screen Viewport */
     .screen {
       width: 340px;
       height: 620px;
@@ -138,7 +143,7 @@
     }
 
     /* ==========================================
-       2. iOS 6 CAMERA UI & RETRO VIEWFINDER
+       2. iOS 6 CAMERA UI & 4:3 VIEWFINDER
        ========================================== */
     .camera-container {
       position: relative;
@@ -150,6 +155,7 @@
       justify-content: space-between;
     }
 
+    /* Viewfinder Container: Locked precisely to 4:3 aspect ratio (340px W x 453px H) */
     .viewfinder {
       position: absolute;
       top: 44px;
@@ -166,18 +172,16 @@
       opacity: 0;
     }
 
-    /* 🔥 모바일에서도 강제로 픽셀이 뭉개지고 자글거리도록 레트로 필터 적용 */
+    /* Video element with subtle warm white balance and subtle contrast */
     #video {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      /* 이미지 보간법을 꺼서 도트/픽셀감 유도 + 저화질 감성 필터 */
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      filter: contrast(1.15) saturate(1.2) brightness(1.03) sepia(0.12);
+      filter: brightness(1.02) contrast(0.98) saturate(1.05) sepia(0.04);
       transition: transform 0.1s ease;
     }
 
+    /* Mirror Mode CSS Transformations */
     #video.mirrored-preview {
       transform: scaleX(-1);
     }
@@ -186,6 +190,7 @@
       transform: scaleX(1);
     }
 
+    /* Soft Vignette Overlay */
     .vignette-overlay {
       position: absolute;
       top: 0;
@@ -193,10 +198,11 @@
       width: 100%;
       height: 100%;
       pointer-events: none;
-      box-shadow: inset 0 0 60px rgba(0,0,0,0.5);
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
       z-index: 2;
     }
 
+    /* Top Camera Toolbar (iOS 6 Skeuomorphic Dark Glass) */
     .top-bar {
       position: absolute;
       top: 0;
@@ -217,6 +223,7 @@
       z-index: 10;
     }
 
+    /* Top Bar Status Badges */
     .status-badge {
       font-size: 10px;
       font-weight: bold;
@@ -228,6 +235,7 @@
       border: 1px solid rgba(255,255,255,0.15);
     }
 
+    /* Video REC Indicator Badge */
     .rec-indicator {
       display: none;
       align-items: center;
@@ -264,6 +272,7 @@
       font-family: monospace;
     }
 
+    /* Top Bar Action Pills */
     .bar-btn {
       background: linear-gradient(to bottom, 
         rgba(80, 80, 80, 0.6) 0%, 
@@ -282,6 +291,7 @@
       cursor: pointer;
     }
 
+    /* Bottom Camera Metallic Toolbar */
     .bottom-bar {
       position: absolute;
       bottom: 0;
@@ -303,6 +313,7 @@
       box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.7);
     }
 
+    /* Mode Segmented Slider Control (PHOTO | VIDEO) */
     .mode-slider-container {
       width: 140px;
       height: 22px;
@@ -357,6 +368,7 @@
       justify-content: space-between;
     }
 
+    /* Left Thumbnail Box */
     .thumbnail-container {
       width: 48px;
       height: 48px;
@@ -388,6 +400,7 @@
       text-align: center;
     }
 
+    /* Shutter / Record Metallic Button */
     .shutter-btn-wrapper {
       position: relative;
       width: 64px;
@@ -426,6 +439,7 @@
       transition: background 0.2s, border-color 0.2s;
     }
 
+    /* Video Record Button Mode */
     .shutter-btn.record-mode {
       background: linear-gradient(135deg, #ff4d4d 0%, #cc0000 100%);
       box-shadow: 
@@ -449,6 +463,7 @@
       100% { transform: scale(0.93); }
     }
 
+    /* Camera Switch Icon */
     .camera-switch-btn {
       width: 40px;
       height: 32px;
@@ -484,6 +499,7 @@
       border-radius: 1px;
     }
 
+    /* Tap-to-Focus Classic Box */
     .focus-square {
       position: absolute;
       width: 65px;
@@ -502,6 +518,7 @@
       transform: scale(1);
     }
 
+    /* Floating Countdown Overlay */
     .countdown-overlay {
       position: absolute;
       top: 50%;
@@ -522,6 +539,7 @@
       transform: translate(-50%, -50%) scale(1.05);
     }
 
+    /* Screen Flash Overlay */
     .flash-overlay {
       position: absolute;
       top: 0;
@@ -540,6 +558,7 @@
       transition: opacity 0.02s ease-in;
     }
 
+    /* Flying Photo Animation */
     .fly-photo {
       position: absolute;
       top: 0;
@@ -554,6 +573,7 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
 
+    /* Toast Notification */
     .toast-notice {
       position: absolute;
       top: 54px;
@@ -577,6 +597,9 @@
       opacity: 1;
     }
 
+    /* ==========================================
+       3. iOS 6 OPTIONS MENU MODAL
+       ========================================== */
     .options-modal {
       position: absolute;
       top: 0;
@@ -651,6 +674,7 @@
       box-shadow: inset 0 1px 1px rgba(255,255,255,0.6);
     }
 
+    /* Done Button in Options */
     .options-done-btn {
       width: 100%;
       background: linear-gradient(to bottom, #4c4c4c 0%, #2c2c2c 100%);
@@ -664,6 +688,7 @@
       margin-top: 20px;
     }
 
+    /* iOS Permission Modal Overlay */
     .permission-modal {
       position: absolute;
       top: 0;
@@ -719,6 +744,7 @@
       cursor: pointer;
     }
 
+    /* Video Playback Modal Overlay */
     .video-modal {
       position: fixed;
       top: 0;
@@ -757,6 +783,9 @@
       background: #000;
     }
 
+    /* ==========================================
+       4. iOS 6 PHOTO GALLERY / ALBUM MODAL
+       ========================================== */
     .gallery-modal {
       position: fixed;
       top: 0;
@@ -886,35 +915,56 @@
 </head>
 <body>
 
+  <!-- Device Switcher Controls -->
   <div class="device-switcher">
     <button class="device-btn active" id="btnBlackPhone">Black iPhone 4</button>
     <button class="device-btn" id="btnWhitePhone">White iPhone 4</button>
   </div>
 
+  <!-- Main Hardware Frame -->
   <div class="iphone-4-frame" id="iphoneFrame">
+    
     <div class="screen">
+      <!-- Camera App Viewport -->
       <div class="camera-container">
         
+        <!-- Live Viewfinder (4:3 Aspect Ratio Viewport) -->
         <div class="viewfinder" id="viewfinder">
           <video id="video" autoplay playsinline muted></video>
           <div class="vignette-overlay"></div>
+          
+          <!-- Tap-to-Focus Yellow Box -->
           <div class="focus-square" id="focusSquare"></div>
+
+          <!-- Countdown Typography -->
           <div class="countdown-overlay" id="countdownOverlay">3</div>
+
+          <!-- Screen Flash FX -->
           <div class="flash-overlay" id="flashOverlay"></div>
+
+          <!-- Toast Notice for System Alerts -->
           <div class="toast-notice" id="toastNotice">Rear camera unavailable.</div>
         </div>
 
+        <!-- Top Camera Toolbar -->
         <div class="top-bar">
           <button class="bar-btn" id="btnOpenOptions">Options</button>
+          
+          <!-- Live Status Bar -->
           <div class="status-badge" id="statusBadge">Flash: Off | Timer: Off</div>
+
+          <!-- Video Recording Indicator Badge -->
           <div class="rec-indicator" id="recIndicator">
             <div class="rec-dot"></div>
             <div class="rec-text" id="recTimerText">REC 00:00</div>
           </div>
+
           <button class="bar-btn" id="btnHdr">HDR Off</button>
         </div>
 
+        <!-- Bottom Camera Metallic Bar & Segmented Control -->
         <div class="bottom-bar">
+          <!-- Segmented Slider (PHOTO | VIDEO) -->
           <div class="mode-slider-container">
             <div class="mode-indicator" id="modeIndicator"></div>
             <div class="mode-option active" id="modePhoto">PHOTO</div>
@@ -922,26 +972,31 @@
           </div>
 
           <div class="bottom-controls-row">
+            <!-- Left Gallery Thumbnail -->
             <div class="thumbnail-container" id="thumbnailContainer">
               <div class="thumbnail-placeholder" id="thumbPlaceholder">No Pic</div>
               <img class="thumbnail-img" id="thumbImg" alt="Thumbnail" />
             </div>
 
+            <!-- Shutter / Record Button -->
             <div class="shutter-btn-wrapper">
               <div class="shutter-btn" id="shutterBtn">
                 <div class="shutter-inner-ring"></div>
               </div>
             </div>
 
+            <!-- Front/Rear Camera Switch Button -->
             <div class="camera-switch-btn" id="btnSwitchCamera" title="Switch Camera">
               <div class="camera-switch-icon"></div>
             </div>
           </div>
         </div>
 
+        <!-- iOS Camera Options Menu Modal -->
         <div class="options-modal" id="optionsModal">
           <div class="options-header">Camera Options</div>
           
+          <!-- Flash Selector -->
           <div class="options-group">
             <div class="options-label">Flash</div>
             <div class="options-segmented" id="optFlash">
@@ -951,6 +1006,7 @@
             </div>
           </div>
 
+          <!-- Timer Selector -->
           <div class="options-group">
             <div class="options-label">Timer</div>
             <div class="options-segmented" id="optTimer">
@@ -961,6 +1017,7 @@
             </div>
           </div>
 
+          <!-- Mirror Toggle Option -->
           <div class="options-group">
             <div class="options-label">Mirror Front Camera</div>
             <div class="options-segmented" id="optMirror">
@@ -972,6 +1029,7 @@
           <button class="options-done-btn" id="btnCloseOptions">Done</button>
         </div>
 
+        <!-- iOS Camera Permissions Error Overlay -->
         <div class="permission-modal" id="permissionModal">
           <div class="ios-alert-box">
             <div class="ios-alert-title">"Camera" Would Like to Access the Camera</div>
@@ -983,18 +1041,22 @@
       </div>
     </div>
 
+    <!-- Hardware Home Button -->
     <div class="home-button">
       <div class="home-button-icon"></div>
     </div>
   </div>
 
+  <!-- iOS PHOTO ALBUM & GALLERY MODAL -->
   <div class="gallery-modal" id="galleryModal">
     <div class="gallery-card">
       <div class="gallery-header">
         <div class="gallery-title" id="galleryTitle">Camera Roll (0)</div>
         <button class="bar-btn" id="btnCloseGallery">Done</button>
       </div>
-      <div class="gallery-grid" id="galleryGrid"></div>
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- Photo thumbnails will be rendered dynamically here -->
+      </div>
       <div class="gallery-footer">
         <button class="action-btn-sm primary" id="btnSaveSelected">Save Selected</button>
         <button class="action-btn-sm" id="btnDeleteSelected">Delete</button>
@@ -1003,6 +1065,7 @@
     </div>
   </div>
 
+  <!-- Recorded Video Preview Modal -->
   <div class="video-modal" id="videoModal">
     <div class="video-preview-card">
       <video id="recordedVideo" controls playsinline></video>
@@ -1014,9 +1077,13 @@
     </div>
   </div>
 
+  <!-- Hidden Offscreen Canvas for Pipeline Render -->
   <canvas id="hiddenCanvas" style="display:none;"></canvas>
 
   <script>
+    /* ==========================================
+       SYSTEM SOUNDS & AUDIO SERVICE
+       ========================================== */
     class AudioService {
       constructor() {
         this.ctx = null;
@@ -1077,6 +1144,9 @@
 
     const audioService = new AudioService();
 
+    /* ==========================================
+       CAMERA STREAM & HARDWARE CONTROLLER
+       ========================================== */
     class CameraController {
       constructor(videoElement, uiController) {
         this.videoElement = videoElement;
@@ -1095,12 +1165,11 @@
           this.currentStream.getTracks().forEach(track => track.stop());
         }
 
-        /* 🔥 모바일에서도 강제로 해상도를 낮추고 구형 센서 느낌 부여 */
         const constraints = {
           video: {
             facingMode: { exact: this.facingMode },
-            width: { ideal: 640 },
-            height: { ideal: 480 }
+            width: { ideal: 1280 },
+            height: { ideal: 960 }
           },
           audio: withAudio
         };
@@ -1115,7 +1184,7 @@
         } catch (err) {
           try {
             const fallbackConstraints = {
-              video: { facingMode: this.facingMode, width: { ideal: 640 }, height: { ideal: 480 } },
+              video: { facingMode: this.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
               audio: withAudio
             };
             this.currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
@@ -1184,6 +1253,9 @@
       }
     }
 
+    /* ==========================================
+       PHOTO CAPTURE & GALLERY ARRAY CONTROLLER
+       ========================================== */
     class PhotoController {
       constructor(cameraController, uiController) {
         this.camera = cameraController;
@@ -1221,8 +1293,9 @@
           const video = this.camera.videoElement;
           const hiddenCanvas = document.getElementById('hiddenCanvas');
 
-          const videoWidth = video.videoWidth || 640;
-          const videoHeight = video.videoHeight || 480;
+          // STEP 1: Dimensions & Vertical 3:4 Crop Calculation
+          const videoWidth = video.videoWidth || 1280;
+          const videoHeight = video.videoHeight || 960;
 
           let cropWidth, cropHeight, cropX, cropY;
           const targetRatio = 3 / 4;
@@ -1240,9 +1313,8 @@
             cropY = (videoHeight - cropHeight) / 2;
           }
 
-          /* 🔥 모바일에서도 사진이 저화질 감성이 나도록 캔버스 해상도를 낮춤 */
-          hiddenCanvas.width = 480;
-          hiddenCanvas.height = 640;
+          hiddenCanvas.width = Math.round(cropWidth);
+          hiddenCanvas.height = Math.round(cropHeight);
 
           const ctx = hiddenCanvas.getContext('2d');
           ctx.save();
@@ -1255,8 +1327,7 @@
             ctx.scale(-1, 1);
           }
 
-          /* 구형 디카 특유의 채도 높고 약간 빛바랜 색감 필터 */
-          ctx.filter = "contrast(1.12) saturate(1.2) brightness(1.04) sepia(0.1)";
+          ctx.filter = "brightness(1.02) contrast(0.98) saturate(1.05) sepia(0.04)";
 
           ctx.drawImage(
             video,
@@ -1265,10 +1336,7 @@
           );
           ctx.restore();
 
-          /* 모바일 사진에도 자글자글한 옛날 감성 노이즈 픽셀 추가 */
-          this.applyRetroNoise(ctx, hiddenCanvas.width, hiddenCanvas.height);
-
-          const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.85);
+          const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.95);
           this.capturedPhotos.push(dataUrl);
 
           this.ui.animateFlyToThumbnail(dataUrl, () => {
@@ -1276,18 +1344,6 @@
             resolve();
           });
         });
-      }
-
-      applyRetroNoise(ctx, width, height) {
-        const imgData = ctx.getImageData(0, 0, width, height);
-        const data = imgData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          const noise = (Math.random() - 0.5) * 10;
-          data[i] = Math.min(255, Math.max(0, data[i] + noise));
-          data[i+1] = Math.min(255, Math.max(0, data[i+1] + noise));
-          data[i+2] = Math.min(255, Math.max(0, data[i+2] + noise));
-        }
-        ctx.putImageData(imgData, 0, 0);
       }
 
       saveSelectedPhotos() {
@@ -1334,6 +1390,9 @@
       }
     }
 
+    /* ==========================================
+       VIDEO RECORDING CONTROLLER
+       ========================================== */
     class VideoController {
       constructor(cameraController, uiController) {
         this.camera = cameraController;
@@ -1413,6 +1472,9 @@
       }
     }
 
+    /* ==========================================
+       UI CONTROLLER & EVENT BINDINGS
+       ========================================== */
     class UIController {
       constructor() {
         this.currentMode = "photo";
@@ -1443,6 +1505,7 @@
         this.btnOpenOptions = document.getElementById('btnOpenOptions');
         this.btnCloseOptions = document.getElementById('btnCloseOptions');
         
+        // Gallery Modal Elements
         this.galleryModal = document.getElementById('galleryModal');
         this.galleryGrid = document.getElementById('galleryGrid');
         this.galleryTitle = document.getElementById('galleryTitle');
@@ -1462,12 +1525,15 @@
       }
 
       attachEvents() {
+        // Mode Switcher (PHOTO | VIDEO)
         this.modePhoto.addEventListener('click', () => this.switchMode('photo'));
         this.modeVideo.addEventListener('click', () => this.switchMode('video'));
 
+        // Options Modal Toggle
         this.btnOpenOptions.addEventListener('click', () => this.optionsModal.classList.add('active'));
         this.btnCloseOptions.addEventListener('click', () => this.optionsModal.classList.remove('active'));
 
+        // Flash Selection Options
         document.querySelectorAll('#optFlash .options-item').forEach(item => {
           item.addEventListener('click', (e) => {
             document.querySelectorAll('#optFlash .options-item').forEach(i => i.classList.remove('active'));
@@ -1477,6 +1543,7 @@
           });
         });
 
+        // Timer Selection Options
         document.querySelectorAll('#optTimer .options-item').forEach(item => {
           item.addEventListener('click', (e) => {
             document.querySelectorAll('#optTimer .options-item').forEach(i => i.classList.remove('active'));
@@ -1486,6 +1553,7 @@
           });
         });
 
+        // Mirror Selection Options
         document.querySelectorAll('#optMirror .options-item').forEach(item => {
           item.addEventListener('click', (e) => {
             document.querySelectorAll('#optMirror .options-item').forEach(i => i.classList.remove('active'));
@@ -1495,6 +1563,7 @@
           });
         });
 
+        // Tap To Focus Box
         this.viewfinder.addEventListener('click', (e) => {
           if (photoController.isCapturing || videoController.isRecording) return;
           const rect = this.viewfinder.getBoundingClientRect();
@@ -1511,6 +1580,7 @@
           setTimeout(() => this.focusSquare.classList.remove('active'), 1200);
         });
 
+        // Device Frame Finish
         this.btnBlackPhone.addEventListener('click', () => {
           this.iphoneFrame.classList.remove('white');
           this.btnBlackPhone.classList.add('active');
@@ -1523,14 +1593,17 @@
           this.btnBlackPhone.classList.remove('active');
         });
 
+        // Camera Switch Button
         this.btnSwitchCamera.addEventListener('click', () => {
           cameraController.toggleCamera();
         });
 
+        // Retry Permission Button
         this.btnRetryPermission.addEventListener('click', () => {
           cameraController.initStream(this.currentMode === 'video');
         });
 
+        // 하단 썸네일 버튼 클릭 시 앨범 갤러리 열기
         this.thumbnailContainer.addEventListener('click', () => {
           if (photoController.capturedPhotos.length > 0) {
             this.renderGallery();
@@ -1540,6 +1613,7 @@
           }
         });
 
+        // 갤러리 모달 제어 이벤트
         this.btnCloseGallery.addEventListener('click', () => {
           this.galleryModal.classList.remove('active');
         });
@@ -1556,6 +1630,7 @@
           photoController.clearAllPhotos();
         });
 
+        // Video Modal Controls
         this.btnReplayVideo.addEventListener('click', () => {
           this.recordedVideo.currentTime = 0;
           this.recordedVideo.play();
@@ -1569,6 +1644,7 @@
           this.videoModal.classList.remove('active');
         });
 
+        // Shutter Button Main Handler
         this.shutterBtn.addEventListener('click', () => {
           if (this.currentMode === 'photo') {
             photoController.handleShutterPress();
@@ -1580,6 +1656,7 @@
         });
       }
 
+      // 갤러리 모달 안의 이미지 그리드 렌더링
       renderGallery() {
         this.galleryGrid.innerHTML = '';
         const total = photoController.capturedPhotos.length;
@@ -1771,6 +1848,9 @@
       }
     }
 
+    /* ==========================================
+       INITIALIZATION & INSTANTIATION
+       ========================================== */
     const uiController = new UIController();
     const cameraController = new CameraController(document.getElementById('video'), uiController);
     const photoController = new PhotoController(cameraController, uiController);
