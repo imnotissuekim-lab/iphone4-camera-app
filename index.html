@@ -172,12 +172,13 @@
       opacity: 0;
     }
 
-    /* Video element with subtle warm white balance and subtle contrast */
+    /* 아이폰 4 2010년 감성 필터 적용 (청록빛 색감, 낮은 해상도 느낌, 거친 노이즈, 하이라이트 과다 및 암부 뭉침) */
     #video {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      filter: brightness(1.02) contrast(0.98) saturate(1.05) sepia(0.04);
+      /* 2010년 아이폰 4 후면 카메라 특유의 쿨톤, 청록빛, 낮은 대비와 뭉개짐 재현 */
+      filter: brightness(1.05) contrast(1.15) saturate(0.82) hue-rotate(170deg) sepia(0.15);
       transition: transform 0.1s ease;
     }
 
@@ -190,7 +191,7 @@
       transform: scaleX(1);
     }
 
-    /* Soft Vignette Overlay */
+    /* Soft Vignette Overlay & Grain simulation */
     .vignette-overlay {
       position: absolute;
       top: 0;
@@ -198,8 +199,59 @@
       width: 100%;
       height: 100%;
       pointer-events: none;
-      box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
+      box-shadow: inset 0 0 60px rgba(0,0,0,0.5);
       z-index: 2;
+    }
+
+    /* 2010년 감성 필름 그레인 오버레이 */
+    .grain-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255,255,255,0.15) 1px, transparent 0);
+      background-size: 3px 3px;
+      opacity: 0.35;
+      z-index: 3;
+    }
+
+    /* 후면 줌 컨트롤러 슬라이더 (후면 카메라 모드일 때만 활성화) */
+    .zoom-slider-container {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 160px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      display: none; /* 기본값 front일 때는 숨김 */
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 4px;
+      z-index: 15;
+    }
+
+    .zoom-slider-container.active {
+      display: flex;
+    }
+
+    .zoom-slider {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      width: 6px;
+      height: 110px;
+      accent-color: #f0be28;
+      cursor: pointer;
+    }
+
+    .zoom-label {
+      font-size: 9px;
+      font-weight: bold;
+      color: #ffcc00;
     }
 
     /* Top Camera Toolbar (iOS 6 Skeuomorphic Dark Glass) */
@@ -976,6 +1028,7 @@
         <div class="viewfinder" id="viewfinder">
           <video id="video" autoplay playsinline muted></video>
           <div class="vignette-overlay"></div>
+          <div class="grain-overlay"></div>
           
           <!-- Tap-to-Focus Yellow Box -->
           <div class="focus-square" id="focusSquare"></div>
@@ -988,6 +1041,13 @@
 
           <!-- Toast Notice for System Alerts -->
           <div class="toast-notice" id="toastNotice">Rear camera unavailable.</div>
+        </div>
+
+        <!-- Rear Camera Zoom Slider Control -->
+        <div class="zoom-slider-container" id="zoomContainer">
+          <span class="zoom-label">+</span>
+          <input type="range" min="1" max="3" step="0.1" value="1" class="zoom-slider" id="zoomSlider">
+          <span class="zoom-label">1x</span>
         </div>
 
         <!-- Top Camera Toolbar -->
@@ -1109,7 +1169,7 @@
     </div>
   </div>
 
-  <!-- Photo Detail Viewer Modal (클릭 시 크게 보기 및 개별 저장/삭제) -->
+  <!-- Photo Detail Viewer Modal -->
   <div class="photo-viewer-modal" id="photoViewerModal">
     <div class="gallery-header" style="width: 100%; border-radius: 6px;">
       <div class="gallery-title">Photo Preview</div>
@@ -1214,7 +1274,8 @@
         this.facingMode = "user"; 
         this.flashMode = "off";   
         this.timerSeconds = 0;    
-        this.isMirrorOn = true;   // 기본값 ON으로 설정
+        this.isMirrorOn = true;   
+        this.zoomLevel = 1.0;     // 후면 줌 레벨
         this.availableDevices = [];
         this.isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       }
@@ -1239,6 +1300,7 @@
           this.ui.hidePermissionModal();
           await this.checkAvailableCameras();
           this.updatePreviewClass();
+          this.applyZoom();
           return true;
         } catch (err) {
           try {
@@ -1251,6 +1313,7 @@
             this.ui.hidePermissionModal();
             await this.checkAvailableCameras();
             this.updatePreviewClass();
+            this.applyZoom();
             return true;
           } catch (fallbackErr) {
             console.error("Camera Access Refused:", fallbackErr);
@@ -1270,6 +1333,21 @@
           }
         } else {
           this.videoElement.classList.add('unmirrored-preview');
+        }
+      }
+
+      applyZoom() {
+        // 후면 카메라일 때만 줌 슬라이더 표시 및 CSS scale 적용
+        const zoomContainer = document.getElementById('zoomContainer');
+        if (this.facingMode === 'environment') {
+          zoomContainer.classList.add('active');
+          this.videoElement.style.transform = `scale(${this.zoomLevel})`;
+        } else {
+          zoomContainer.classList.remove('active');
+          this.zoomLevel = 1.0;
+          document.getElementById('zoomSlider').value = 1.0;
+          document.getElementById('zoomLabel').textContent = "1x";
+          this.updatePreviewClass();
         }
       }
 
@@ -1322,7 +1400,7 @@
         this.isCapturing = false;
         this.capturedPhotos = []; 
         this.selectedIndices = new Set(); 
-        this.currentViewingIndex = null; // 상세 보기 중인 사진 인덱스
+        this.currentViewingIndex = null;
       }
 
       async handleShutterPress() {
@@ -1372,6 +1450,15 @@
             cropY = (videoHeight - cropHeight) / 2;
           }
 
+          // 줌인 상태가 반영되도록 크롭 영역 조절
+          if (this.camera.facingMode === 'environment' && this.camera.zoomLevel > 1) {
+            const z = this.camera.zoomLevel;
+            cropWidth /= z;
+            cropHeight /= z;
+            cropX += (videoWidth - cropWidth) / 2;
+            cropY += (videoHeight - cropHeight) / 2;
+          }
+
           hiddenCanvas.width = Math.round(cropWidth);
           hiddenCanvas.height = Math.round(cropHeight);
 
@@ -1386,7 +1473,8 @@
             ctx.scale(-1, 1);
           }
 
-          ctx.filter = "brightness(1.02) contrast(0.98) saturate(1.05) sepia(0.04)";
+          // 2010년 아이폰 4 카메라 감성 필터 (청록빛 색감, 거친 노이즈/색수차 느낌)
+          ctx.filter = "brightness(1.05) contrast(1.15) saturate(0.82) hue-rotate(170deg) sepia(0.15)";
 
           ctx.drawImage(
             video,
@@ -1395,7 +1483,7 @@
           );
           ctx.restore();
 
-          const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.95);
+          const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.90);
           this.capturedPhotos.push(dataUrl);
 
           this.ui.animateFlyToThumbnail(dataUrl, () => {
@@ -1443,7 +1531,6 @@
         this.capturedPhotos.splice(index, 1);
         this.selectedIndices.clear();
 
-        // 인덱스 재정렬 반영
         if (this.capturedPhotos.length > 0) {
           this.ui.updateThumbnail(this.capturedPhotos[this.capturedPhotos.length - 1]);
         } else {
@@ -1596,6 +1683,7 @@
         this.optionsModal = document.getElementById('optionsModal');
         this.btnOpenOptions = document.getElementById('btnOpenOptions');
         this.btnCloseOptions = document.getElementById('btnCloseOptions');
+        this.zoomSlider = document.getElementById('zoomSlider');
         
         // Gallery Modal Elements
         this.galleryModal = document.getElementById('galleryModal');
@@ -1631,6 +1719,13 @@
         // Options Modal Toggle
         this.btnOpenOptions.addEventListener('click', () => this.optionsModal.classList.add('active'));
         this.btnCloseOptions.addEventListener('click', () => this.optionsModal.classList.remove('active'));
+
+        // Zoom Slider Event
+        this.zoomSlider.addEventListener('input', (e) => {
+          cameraController.zoomLevel = parseFloat(e.target.value);
+          cameraController.applyZoom();
+          document.getElementById('zoomLabel').textContent = `${cameraController.zoomLevel.toFixed(1)}x`;
+        });
 
         // Flash Selection Options
         document.querySelectorAll('#optFlash .options-item').forEach(item => {
@@ -1808,15 +1903,12 @@
           item.appendChild(img);
           item.appendChild(checkmark);
 
-          // 사진 클릭 시 상세 보기 모달 오픈
-          item.addEventListener('click', (e) => {
-            // 체크박스/선택 모드가 아닌 일반 터치로 상세 보기 진입 처리
+          item.addEventListener('click', () => {
             photoController.currentViewingIndex = idx;
             this.viewerImage.src = src;
             this.photoViewerModal.classList.add('active');
           });
 
-          // 길게 누르거나 체크박스 선택 영역 구분용 이벤트 (모바일/PC 공용 토글 지원)
           checkmark.addEventListener('click', (e) => {
             e.stopPropagation();
             if (photoController.selectedIndices.has(idx)) {
@@ -1831,7 +1923,6 @@
           this.galleryGrid.appendChild(item);
         });
 
-        // 전체 선택 버튼 텍스트 동기화
         if (total > 0 && photoController.selectedIndices.size === total) {
           this.btnSelectAll.textContent = "Deselect All";
         } else {
