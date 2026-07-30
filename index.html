@@ -138,7 +138,7 @@
     }
 
     /* ==========================================
-       2. iOS 6 CAMERA UI & UNFOCUSED VIEWFINDER
+       2. iOS 6 CAMERA UI & VIEWFINDER
        ========================================== */
     .camera-container {
       position: relative;
@@ -166,14 +166,13 @@
       opacity: 0;
     }
 
-    /* 🔥 초점이 맞지 않는 렌즈 효과 (Soft Focus Blur + Soft Bloom) */
+    /* 🔥 블러 완전 제거 (선명한 화질 유지하되 미세한 색감만 iOS 6 느낌 적용) */
     #video {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      /* 초점이 나간 효과: 부드러운 블러 + 약간의 빛 퍼짐 */
-      filter: blur(2.2px) brightness(1.06) contrast(0.95) saturate(1.05);
-      transition: transform 0.1s ease, filter 0.3s ease;
+      filter: brightness(1.02) contrast(0.98) saturate(1.05) sepia(0.04);
+      transition: transform 0.1s ease;
     }
 
     #video.mirrored-preview {
@@ -184,7 +183,6 @@
       transform: scaleX(1);
     }
 
-    /* 비네팅 레이어 */
     .vignette-overlay {
       position: absolute;
       top: 0;
@@ -192,7 +190,7 @@
       width: 100%;
       height: 100%;
       pointer-events: none;
-      box-shadow: inset 0 0 50px rgba(0,0,0,0.35);
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
       z-index: 2;
     }
 
@@ -1252,8 +1250,8 @@
             ctx.scale(-1, 1);
           }
 
-          /* 🔥 초점이 흐려진 렌즈 불일치(Out of Focus) 필터링 */
-          ctx.filter = "blur(2.2px) brightness(1.06) contrast(0.95) saturate(1.05)";
+          /* 깔끔하고 선명한 기본 색감 설정 */
+          ctx.filter = "brightness(1.02) contrast(0.98) saturate(1.05) sepia(0.04)";
 
           ctx.drawImage(
             video,
@@ -1262,7 +1260,7 @@
           );
           ctx.restore();
 
-          const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.92);
+          const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.95);
           this.capturedPhotos.push(dataUrl);
 
           this.ui.animateFlyToThumbnail(dataUrl, () => {
