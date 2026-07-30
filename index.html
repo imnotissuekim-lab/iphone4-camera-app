@@ -172,12 +172,12 @@
       opacity: 0;
     }
 
-    /* 아이폰 4 2010년 감성 필터 적용 (청록빛 색감, 낮은 해상도 느낌, 거친 노이즈, 하이라이트 과다 및 암부 뭉침) */
+    /* Video element with subtle warm white balance and subtle contrast */
     #video {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      filter: brightness(1.05) contrast(1.15) saturate(0.82) hue-rotate(170deg) sepia(0.15);
+      filter: brightness(1.02) contrast(0.98) saturate(1.05) sepia(0.04);
       transition: transform 0.1s ease;
     }
 
@@ -190,7 +190,7 @@
       transform: scaleX(1);
     }
 
-    /* Soft Vignette Overlay & Grain simulation */
+    /* Soft Vignette Overlay */
     .vignette-overlay {
       position: absolute;
       top: 0;
@@ -198,58 +198,8 @@
       width: 100%;
       height: 100%;
       pointer-events: none;
-      box-shadow: inset 0 0 60px rgba(0,0,0,0.5);
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.3);
       z-index: 2;
-    }
-
-    .grain-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      background-image: radial-gradient(rgba(255,255,255,0.15) 1px, transparent 0);
-      background-size: 3px 3px;
-      opacity: 0.35;
-      z-index: 3;
-    }
-
-    /* 후면 줌 컨트롤러 슬라이더 */
-    .zoom-slider-container {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      height: 160px;
-      background: rgba(0, 0, 0, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 12px;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 4px;
-      z-index: 15;
-    }
-
-    .zoom-slider-container.active {
-      display: flex;
-    }
-
-    .zoom-slider {
-      writing-mode: vertical-lr;
-      direction: rtl;
-      width: 6px;
-      height: 110px;
-      accent-color: #f0be28;
-      cursor: pointer;
-    }
-
-    .zoom-label {
-      font-size: 9px;
-      font-weight: bold;
-      color: #ffcc00;
     }
 
     /* Top Camera Toolbar (iOS 6 Skeuomorphic Dark Glass) */
@@ -1026,7 +976,6 @@
         <div class="viewfinder" id="viewfinder">
           <video id="video" autoplay playsinline muted></video>
           <div class="vignette-overlay"></div>
-          <div class="grain-overlay"></div>
           
           <!-- Tap-to-Focus Yellow Box -->
           <div class="focus-square" id="focusSquare"></div>
@@ -1039,13 +988,6 @@
 
           <!-- Toast Notice for System Alerts -->
           <div class="toast-notice" id="toastNotice">Rear camera unavailable.</div>
-        </div>
-
-        <!-- Rear Camera Zoom Slider Control -->
-        <div class="zoom-slider-container" id="zoomContainer">
-          <span class="zoom-label">+</span>
-          <input type="range" min="1" max="3" step="0.1" value="1" class="zoom-slider" id="zoomSlider">
-          <span class="zoom-label">1x</span>
         </div>
 
         <!-- Top Camera Toolbar -->
@@ -1167,7 +1109,7 @@
     </div>
   </div>
 
-  <!-- Photo Detail Viewer Modal -->
+  <!-- Photo Detail Viewer Modal (클릭 시 크게 보기 및 개별 저장/삭제) -->
   <div class="photo-viewer-modal" id="photoViewerModal">
     <div class="gallery-header" style="width: 100%; border-radius: 6px;">
       <div class="gallery-title">Photo Preview</div>
@@ -1272,8 +1214,7 @@
         this.facingMode = "user"; 
         this.flashMode = "off";   
         this.timerSeconds = 0;    
-        this.isMirrorOn = true;   
-        this.zoomLevel = 1.0;     
+        this.isMirrorOn = true;   // 기본값 ON으로 설정
         this.availableDevices = [];
         this.isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       }
@@ -1283,10 +1224,9 @@
           this.currentStream.getTracks().forEach(track => track.stop());
         }
 
-        // exact 대신 안전한 제약 조건 적용 (모바일 브라우저 충돌/무한 팝업 방지)
         const constraints = {
           video: {
-            facingMode: this.facingMode,
+            facingMode: { exact: this.facingMode },
             width: { ideal: 1280 },
             height: { ideal: 960 }
           },
@@ -1299,12 +1239,24 @@
           this.ui.hidePermissionModal();
           await this.checkAvailableCameras();
           this.updatePreviewClass();
-          this.applyZoom();
           return true;
         } catch (err) {
-          console.error("Camera Access Refused:", err);
-          this.ui.showPermissionModal();
-          return false;
+          try {
+            const fallbackConstraints = {
+              video: { facingMode: this.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+              audio: withAudio
+            };
+            this.currentStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+            this.videoElement.srcObject = this.currentStream;
+            this.ui.hidePermissionModal();
+            await this.checkAvailableCameras();
+            this.updatePreviewClass();
+            return true;
+          } catch (fallbackErr) {
+            console.error("Camera Access Refused:", fallbackErr);
+            this.ui.showPermissionModal();
+            return false;
+          }
         }
       }
 
@@ -1318,20 +1270,6 @@
           }
         } else {
           this.videoElement.classList.add('unmirrored-preview');
-        }
-      }
-
-      applyZoom() {
-        const zoomContainer = document.getElementById('zoomContainer');
-        if (this.facingMode === 'environment') {
-          zoomContainer.classList.add('active');
-          this.videoElement.style.transform = `scale(${this.zoomLevel})`;
-        } else {
-          zoomContainer.classList.remove('active');
-          this.zoomLevel = 1.0;
-          document.getElementById('zoomSlider').value = 1.0;
-          document.getElementById('zoomLabel').textContent = "1x";
-          this.updatePreviewClass();
         }
       }
 
@@ -1358,7 +1296,12 @@
 
         this.facingMode = (this.facingMode === "user") ? "environment" : "user";
         this.ui.animateViewfinderSwitch(async () => {
-          await this.initStream(uiController.currentMode === 'video');
+          const success = await this.initStream(uiController.currentMode === 'video');
+          if (!success && this.facingMode === "environment") {
+            this.facingMode = "user";
+            await this.initStream(uiController.currentMode === 'video');
+            this.ui.showToast("Rear camera unavailable.");
+          }
         });
       }
 
@@ -1379,7 +1322,7 @@
         this.isCapturing = false;
         this.capturedPhotos = []; 
         this.selectedIndices = new Set(); 
-        this.currentViewingIndex = null;
+        this.currentViewingIndex = null; // 상세 보기 중인 사진 인덱스
       }
 
       async handleShutterPress() {
@@ -1429,14 +1372,6 @@
             cropY = (videoHeight - cropHeight) / 2;
           }
 
-          if (this.camera.facingMode === 'environment' && this.camera.zoomLevel > 1) {
-            const z = this.camera.zoomLevel;
-            cropWidth /= z;
-            cropHeight /= z;
-            cropX += (videoWidth - cropWidth) / 2;
-            cropY += (videoHeight - cropHeight) / 2;
-          }
-
           hiddenCanvas.width = Math.round(cropWidth);
           hiddenCanvas.height = Math.round(cropHeight);
 
@@ -1451,7 +1386,7 @@
             ctx.scale(-1, 1);
           }
 
-          ctx.filter = "brightness(1.05) contrast(1.15) saturate(0.82) hue-rotate(170deg) sepia(0.15)";
+          ctx.filter = "brightness(1.02) contrast(0.98) saturate(1.05) sepia(0.04)";
 
           ctx.drawImage(
             video,
@@ -1460,7 +1395,7 @@
           );
           ctx.restore();
 
-          const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.90);
+          const dataUrl = hiddenCanvas.toDataURL('image/jpeg', 0.95);
           this.capturedPhotos.push(dataUrl);
 
           this.ui.animateFlyToThumbnail(dataUrl, () => {
@@ -1508,6 +1443,7 @@
         this.capturedPhotos.splice(index, 1);
         this.selectedIndices.clear();
 
+        // 인덱스 재정렬 반영
         if (this.capturedPhotos.length > 0) {
           this.ui.updateThumbnail(this.capturedPhotos[this.capturedPhotos.length - 1]);
         } else {
@@ -1660,7 +1596,6 @@
         this.optionsModal = document.getElementById('optionsModal');
         this.btnOpenOptions = document.getElementById('btnOpenOptions');
         this.btnCloseOptions = document.getElementById('btnCloseOptions');
-        this.zoomSlider = document.getElementById('zoomSlider');
         
         // Gallery Modal Elements
         this.galleryModal = document.getElementById('galleryModal');
@@ -1689,18 +1624,15 @@
       }
 
       attachEvents() {
+        // Mode Switcher (PHOTO | VIDEO)
         this.modePhoto.addEventListener('click', () => this.switchMode('photo'));
         this.modeVideo.addEventListener('click', () => this.switchMode('video'));
 
+        // Options Modal Toggle
         this.btnOpenOptions.addEventListener('click', () => this.optionsModal.classList.add('active'));
         this.btnCloseOptions.addEventListener('click', () => this.optionsModal.classList.remove('active'));
 
-        this.zoomSlider.addEventListener('input', (e) => {
-          cameraController.zoomLevel = parseFloat(e.target.value);
-          cameraController.applyZoom();
-          document.getElementById('zoomLabel').textContent = `${cameraController.zoomLevel.toFixed(1)}x`;
-        });
-
+        // Flash Selection Options
         document.querySelectorAll('#optFlash .options-item').forEach(item => {
           item.addEventListener('click', (e) => {
             document.querySelectorAll('#optFlash .options-item').forEach(i => i.classList.remove('active'));
@@ -1710,6 +1642,7 @@
           });
         });
 
+        // Timer Selection Options
         document.querySelectorAll('#optTimer .options-item').forEach(item => {
           item.addEventListener('click', (e) => {
             document.querySelectorAll('#optTimer .options-item').forEach(i => i.classList.remove('active'));
@@ -1719,6 +1652,7 @@
           });
         });
 
+        // Mirror Selection Options
         document.querySelectorAll('#optMirror .options-item').forEach(item => {
           item.addEventListener('click', (e) => {
             document.querySelectorAll('#optMirror .options-item').forEach(i => i.classList.remove('active'));
@@ -1728,6 +1662,7 @@
           });
         });
 
+        // Tap To Focus Box
         this.viewfinder.addEventListener('click', (e) => {
           if (photoController.isCapturing || videoController.isRecording) return;
           const rect = this.viewfinder.getBoundingClientRect();
@@ -1744,6 +1679,7 @@
           setTimeout(() => this.focusSquare.classList.remove('active'), 1200);
         });
 
+        // Device Frame Finish
         this.btnBlackPhone.addEventListener('click', () => {
           this.iphoneFrame.classList.remove('white');
           this.btnBlackPhone.classList.add('active');
@@ -1756,14 +1692,17 @@
           this.btnBlackPhone.classList.remove('active');
         });
 
+        // Camera Switch Button
         this.btnSwitchCamera.addEventListener('click', () => {
           cameraController.toggleCamera();
         });
 
+        // Retry Permission Button
         this.btnRetryPermission.addEventListener('click', () => {
           cameraController.initStream(this.currentMode === 'video');
         });
 
+        // 하단 썸네일 버튼 클릭 시 앨범 갤러리 열기
         this.thumbnailContainer.addEventListener('click', () => {
           if (photoController.capturedPhotos.length > 0) {
             this.renderGallery();
@@ -1773,6 +1712,7 @@
           }
         });
 
+        // 갤러리 모달 제어 이벤트
         this.btnCloseGallery.addEventListener('click', () => {
           this.galleryModal.classList.remove('active');
         });
@@ -1792,6 +1732,7 @@
           photoController.toggleSelectAll();
         });
 
+        // 사진 상세 보기 모달 컨트롤
         this.btnCloseViewer.addEventListener('click', () => {
           this.photoViewerModal.classList.remove('active');
         });
@@ -1813,6 +1754,7 @@
           }
         });
 
+        // Video Modal Controls
         this.btnReplayVideo.addEventListener('click', () => {
           this.recordedVideo.currentTime = 0;
           this.recordedVideo.play();
@@ -1826,6 +1768,7 @@
           this.videoModal.classList.remove('active');
         });
 
+        // Shutter Button Main Handler
         this.shutterBtn.addEventListener('click', () => {
           if (this.currentMode === 'photo') {
             photoController.handleShutterPress();
@@ -1837,6 +1780,7 @@
         });
       }
 
+      // 갤러리 모달 안의 이미지 그리드 렌더링
       renderGallery() {
         this.galleryGrid.innerHTML = '';
         const total = photoController.capturedPhotos.length;
@@ -1864,12 +1808,15 @@
           item.appendChild(img);
           item.appendChild(checkmark);
 
-          item.addEventListener('click', () => {
+          // 사진 클릭 시 상세 보기 모달 오픈
+          item.addEventListener('click', (e) => {
+            // 체크박스/선택 모드가 아닌 일반 터치로 상세 보기 진입 처리
             photoController.currentViewingIndex = idx;
             this.viewerImage.src = src;
             this.photoViewerModal.classList.add('active');
           });
 
+          // 길게 누르거나 체크박스 선택 영역 구분용 이벤트 (모바일/PC 공용 토글 지원)
           checkmark.addEventListener('click', (e) => {
             e.stopPropagation();
             if (photoController.selectedIndices.has(idx)) {
@@ -1884,6 +1831,7 @@
           this.galleryGrid.appendChild(item);
         });
 
+        // 전체 선택 버튼 텍스트 동기화
         if (total > 0 && photoController.selectedIndices.size === total) {
           this.btnSelectAll.textContent = "Deselect All";
         } else {
