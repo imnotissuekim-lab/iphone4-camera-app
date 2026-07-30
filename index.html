@@ -911,6 +911,50 @@
       background: linear-gradient(to bottom, #007aff, #0051a3);
       border-color: #003e80;
     }
+
+    /* Photo Detail Viewer Modal */
+    .photo-viewer-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 120;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 30px 20px;
+    }
+
+    .photo-viewer-modal.active {
+      display: flex;
+    }
+
+    .viewer-img-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-height: 75vh;
+    }
+
+    .viewer-img-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 5px 25px rgba(0,0,0,0.8);
+    }
+
+    .viewer-footer {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+    }
   </style>
 </head>
 <body>
@@ -1021,8 +1065,8 @@
           <div class="options-group">
             <div class="options-label">Mirror Front Camera</div>
             <div class="options-segmented" id="optMirror">
-              <div class="options-item" data-val="on">On</div>
-              <div class="options-item active" data-val="off">Off</div>
+              <div class="options-item active" data-val="on">On</div>
+              <div class="options-item" data-val="off">Off</div>
             </div>
           </div>
 
@@ -1060,8 +1104,23 @@
       <div class="gallery-footer">
         <button class="action-btn-sm primary" id="btnSaveSelected">Save Selected</button>
         <button class="action-btn-sm" id="btnDeleteSelected">Delete</button>
-        <button class="action-btn-sm" id="btnClearAll">Clear All</button>
+        <button class="action-btn-sm" id="btnSelectAll">Select All</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Photo Detail Viewer Modal (클릭 시 크게 보기 및 개별 저장/삭제) -->
+  <div class="photo-viewer-modal" id="photoViewerModal">
+    <div class="gallery-header" style="width: 100%; border-radius: 6px;">
+      <div class="gallery-title">Photo Preview</div>
+      <button class="bar-btn" id="btnCloseViewer">Back</button>
+    </div>
+    <div class="viewer-img-container">
+      <img id="viewerImage" src="" alt="Detailed Photo">
+    </div>
+    <div class="viewer-footer">
+      <button class="action-btn-sm primary" id="btnViewerSave">Save</button>
+      <button class="action-btn-sm" id="btnViewerDelete" style="background: linear-gradient(to bottom, #aa2222, #771111); border-color: #550000;">Delete</button>
     </div>
   </div>
 
@@ -1155,7 +1214,7 @@
         this.facingMode = "user"; 
         this.flashMode = "off";   
         this.timerSeconds = 0;    
-        this.isMirrorOn = false;  
+        this.isMirrorOn = true;   // 기본값 ON으로 설정
         this.availableDevices = [];
         this.isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       }
@@ -1263,6 +1322,7 @@
         this.isCapturing = false;
         this.capturedPhotos = []; 
         this.selectedIndices = new Set(); 
+        this.currentViewingIndex = null; // 상세 보기 중인 사진 인덱스
       }
 
       async handleShutterPress() {
@@ -1293,7 +1353,6 @@
           const video = this.camera.videoElement;
           const hiddenCanvas = document.getElementById('hiddenCanvas');
 
-          // STEP 1: Dimensions & Vertical 3:4 Crop Calculation
           const videoWidth = video.videoWidth || 1280;
           const videoHeight = video.videoHeight || 960;
 
@@ -1346,22 +1405,51 @@
         });
       }
 
+      saveSinglePhoto(index) {
+        if (index < 0 || index >= this.capturedPhotos.length) return;
+        const link = document.createElement('a');
+        link.download = `iPhone4-Photo-${Date.now()}.jpg`;
+        link.href = this.capturedPhotos[index];
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        this.ui.showToast("Photo saved!");
+      }
+
       saveSelectedPhotos() {
         if (this.selectedIndices.size === 0) {
           this.ui.showToast("Select photos to save.");
           return;
         }
 
-        this.selectedIndices.forEach((index, i) => {
+        let count = 0;
+        this.selectedIndices.forEach((index) => {
           setTimeout(() => {
             const link = document.createElement('a');
-            link.download = `iPhone4-Photo-${Date.now()}-${i + 1}.jpg`;
+            link.download = `iPhone4-Photo-${Date.now()}-${count + 1}.jpg`;
             link.href = this.capturedPhotos[index];
+            document.body.appendChild(link);
             link.click();
-          }, i * 250);
+            document.body.removeChild(link);
+          }, count * 300);
+          count++;
         });
 
         this.ui.showToast(`Saved ${this.selectedIndices.size} photo(s)!`);
+      }
+
+      deleteSinglePhoto(index) {
+        if (index < 0 || index >= this.capturedPhotos.length) return;
+        this.capturedPhotos.splice(index, 1);
+        this.selectedIndices.clear();
+
+        // 인덱스 재정렬 반영
+        if (this.capturedPhotos.length > 0) {
+          this.ui.updateThumbnail(this.capturedPhotos[this.capturedPhotos.length - 1]);
+        } else {
+          this.ui.resetThumbnail();
+        }
+        this.ui.renderGallery();
       }
 
       deleteSelectedPhotos() {
@@ -1382,10 +1470,12 @@
         this.ui.renderGallery();
       }
 
-      clearAllPhotos() {
-        this.capturedPhotos = [];
-        this.selectedIndices.clear();
-        this.ui.resetThumbnail();
+      toggleSelectAll() {
+        if (this.selectedIndices.size === this.capturedPhotos.length) {
+          this.selectedIndices.clear();
+        } else {
+          this.capturedPhotos.forEach((_, idx) => this.selectedIndices.add(idx));
+        }
         this.ui.renderGallery();
       }
     }
@@ -1468,7 +1558,9 @@
         const link = document.createElement('a');
         link.download = `iPhone4-Video-${Date.now()}.mp4`;
         link.href = this.recordedVideoUrl;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
       }
     }
 
@@ -1512,7 +1604,14 @@
         this.btnCloseGallery = document.getElementById('btnCloseGallery');
         this.btnSaveSelected = document.getElementById('btnSaveSelected');
         this.btnDeleteSelected = document.getElementById('btnDeleteSelected');
-        this.btnClearAll = document.getElementById('btnClearAll');
+        this.btnSelectAll = document.getElementById('btnSelectAll');
+
+        // Photo Detail Viewer Elements
+        this.photoViewerModal = document.getElementById('photoViewerModal');
+        this.viewerImage = document.getElementById('viewerImage');
+        this.btnCloseViewer = document.getElementById('btnCloseViewer');
+        this.btnViewerSave = document.getElementById('btnViewerSave');
+        this.btnViewerDelete = document.getElementById('btnViewerDelete');
 
         this.videoModal = document.getElementById('videoModal');
         this.recordedVideo = document.getElementById('recordedVideo');
@@ -1624,10 +1723,35 @@
 
         this.btnDeleteSelected.addEventListener('click', () => {
           photoController.deleteSelectedPhotos();
+          if (photoController.capturedPhotos.length === 0) {
+            this.galleryModal.classList.remove('active');
+          }
         });
 
-        this.btnClearAll.addEventListener('click', () => {
-          photoController.clearAllPhotos();
+        this.btnSelectAll.addEventListener('click', () => {
+          photoController.toggleSelectAll();
+        });
+
+        // 사진 상세 보기 모달 컨트롤
+        this.btnCloseViewer.addEventListener('click', () => {
+          this.photoViewerModal.classList.remove('active');
+        });
+
+        this.btnViewerSave.addEventListener('click', () => {
+          if (photoController.currentViewingIndex !== null) {
+            photoController.saveSinglePhoto(photoController.currentViewingIndex);
+          }
+        });
+
+        this.btnViewerDelete.addEventListener('click', () => {
+          if (photoController.currentViewingIndex !== null) {
+            photoController.deleteSinglePhoto(photoController.currentViewingIndex);
+            this.photoViewerModal.classList.remove('active');
+            this.renderGallery();
+            if (photoController.capturedPhotos.length === 0) {
+              this.galleryModal.classList.remove('active');
+            }
+          }
         });
 
         // Video Modal Controls
@@ -1684,7 +1808,17 @@
           item.appendChild(img);
           item.appendChild(checkmark);
 
-          item.addEventListener('click', () => {
+          // 사진 클릭 시 상세 보기 모달 오픈
+          item.addEventListener('click', (e) => {
+            // 체크박스/선택 모드가 아닌 일반 터치로 상세 보기 진입 처리
+            photoController.currentViewingIndex = idx;
+            this.viewerImage.src = src;
+            this.photoViewerModal.classList.add('active');
+          });
+
+          // 길게 누르거나 체크박스 선택 영역 구분용 이벤트 (모바일/PC 공용 토글 지원)
+          checkmark.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (photoController.selectedIndices.has(idx)) {
               photoController.selectedIndices.delete(idx);
               item.classList.remove('selected');
@@ -1696,6 +1830,13 @@
 
           this.galleryGrid.appendChild(item);
         });
+
+        // 전체 선택 버튼 텍스트 동기화
+        if (total > 0 && photoController.selectedIndices.size === total) {
+          this.btnSelectAll.textContent = "Deselect All";
+        } else {
+          this.btnSelectAll.textContent = "Select All";
+        }
       }
 
       updateStatusBadge() {
