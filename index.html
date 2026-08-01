@@ -1,200 +1,89 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>iPhone 4 iOS 6 Camera App</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+/* ==========================================
+   PHOTO CAPTURE & GALLERY CONTROLLER
+   ========================================== */
+class PhotoController {
+  constructor(cameraController, uiController) {
+    this.camera = cameraController;
+    this.ui = uiController;
+    this.isCapturing = false;
+    this.capturedPhotos = []; 
+    this.selectedIndices = new Set(); 
+    this.currentViewingIndex = null;
+  }
 
-  <!-- Device Switcher Controls -->
-  <div class="device-switcher">
-    <button class="device-btn active" id="btnBlackPhone">Black iPhone 4</button>
-    <button class="device-btn" id="btnWhitePhone">White iPhone 4</button>
-  </div>
+  // [추가] Base64 Data URL을 Blob 객체로 변환하는 유틸리티 함수
+  dataURItoBlob(dataURI) {
+    const byteString = atob(dataURI.split(',')[1]);
+    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+  }
 
-  <!-- Main Hardware Frame -->
-  <div class="iphone-4-frame" id="iphoneFrame">
+  // ... (handleShutterPress 및 captureSinglePhoto 메서드는 기존과 동일) ...
+
+  // [수정] 단일 사진 저장 기능 (Blob URL 방식 적용)
+  saveSinglePhoto(index) {
+    if (index < 0 || index >= this.capturedPhotos.length) return;
     
-    <div class="screen">
-      <!-- Camera App Viewport -->
-      <div class="camera-container">
-        
-        <!-- Live Viewfinder (4:3 Aspect Ratio Viewport) -->
-        <div class="viewfinder" id="viewfinder">
-          <video id="video" autoplay playsinline muted></video>
-          <div class="color-cast-overlay"></div>
-          <div class="vignette-overlay"></div>
-          
-          <!-- Tap-to-Focus Yellow Box -->
-          <div class="focus-square" id="focusSquare"></div>
+    try {
+      const dataUrl = this.capturedPhotos[index];
+      const blob = this.dataURItoBlob(dataUrl);
+      const blobUrl = URL.createObjectURL(blob);
 
-          <!-- Countdown Typography -->
-          <div class="countdown-overlay" id="countdownOverlay">3</div>
+      const link = document.createElement('a');
+      link.download = `iPhone4-Photo-${Date.now()}.jpg`;
+      link.href = blobUrl;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-          <!-- Screen Flash FX -->
-          <div class="flash-overlay" id="flashOverlay"></div>
+      // 사용 후 메모리 해제
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 
-          <!-- Toast Notice for System Alerts -->
-          <div class="toast-notice" id="toastNotice">Rear camera unavailable.</div>
+      this.ui.showToast("Photo saved!");
+    } catch (e) {
+      console.error("Save failed:", e);
+      // 만약 모바일에서 다운로드가 막힐 경우 새 탭으로 사진 열어주기 (fallback)
+      const win = window.open();
+      if (win) {
+        win.document.write(`<img src="${this.capturedPhotos[index]}" style="max-width:100%;"/>`);
+      }
+    }
+  }
 
-          <!-- Rear Camera Zoom Control (pinch / scroll / drag) -->
-          <div class="zoom-control" id="zoomControl">
-            <input type="range" id="zoomSlider" min="1" max="3" step="0.1" value="1">
-          </div>
-          <div class="zoom-level-badge" id="zoomBadge">1.0x</div>
-        </div>
+  // [수정] 선택한 사진 저장 기능 (Blob URL 방식 & 안정적인 시간 격차 적용)
+  saveSelectedPhotos() {
+    if (this.selectedIndices.size === 0) {
+      this.ui.showToast("Select photos to save.");
+      return;
+    }
 
-        <!-- Top Camera Toolbar -->
-        <div class="top-bar">
-          <button class="bar-btn" id="btnOpenOptions">Options</button>
-          
-          <!-- Live Status Bar -->
-          <div class="status-badge" id="statusBadge">Flash: Off | Timer: Off</div>
+    const indices = Array.from(this.selectedIndices);
+    indices.forEach((index, i) => {
+      setTimeout(() => {
+        const dataUrl = this.capturedPhotos[index];
+        const blob = this.dataURItoBlob(dataUrl);
+        const blobUrl = URL.createObjectURL(blob);
 
-          <!-- Video Recording Indicator Badge -->
-          <div class="rec-indicator" id="recIndicator">
-            <div class="rec-dot"></div>
-            <div class="rec-text" id="recTimerText">REC 00:00</div>
-          </div>
+        const link = document.createElement('a');
+        link.download = `iPhone4-Photo-${Date.now()}-${i + 1}.jpg`;
+        link.href = blobUrl;
 
-          <button class="bar-btn" id="btnHdr">HDR Off</button>
-        </div>
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-        <!-- Bottom Camera Metallic Bar & Segmented Control -->
-        <div class="bottom-bar">
-          <!-- Segmented Slider (PHOTO | VIDEO) -->
-          <div class="mode-slider-container">
-            <div class="mode-indicator" id="modeIndicator"></div>
-            <div class="mode-option active" id="modePhoto">PHOTO</div>
-            <div class="mode-option" id="modeVideo">VIDEO</div>
-          </div>
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      }, i * 400); // 브라우저 차단을 피하기 위해 400ms 간격 배치
+    });
 
-          <div class="bottom-controls-row">
-            <!-- Left Gallery Thumbnail -->
-            <div class="thumbnail-container" id="thumbnailContainer">
-              <div class="thumbnail-placeholder" id="thumbPlaceholder">No Pic</div>
-              <img class="thumbnail-img" id="thumbImg" alt="Thumbnail" />
-            </div>
+    this.ui.showToast(`Saved ${this.selectedIndices.size} photo(s)!`);
+  }
 
-            <!-- Shutter / Record Button -->
-            <div class="shutter-btn-wrapper">
-              <div class="shutter-btn" id="shutterBtn">
-                <div class="shutter-inner-ring"></div>
-              </div>
-            </div>
-
-            <!-- Front/Rear Camera Switch Button -->
-            <div class="camera-switch-btn" id="btnSwitchCamera" title="Switch Camera">
-              <div class="camera-switch-icon"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- iOS Camera Options Menu Modal -->
-        <div class="options-modal" id="optionsModal">
-          <div class="options-header">Camera Options</div>
-          
-          <!-- Flash Selector -->
-          <div class="options-group">
-            <div class="options-label">Flash</div>
-            <div class="options-segmented" id="optFlash">
-              <div class="options-item" data-val="auto">Auto</div>
-              <div class="options-item" data-val="on">On</div>
-              <div class="options-item active" data-val="off">Off</div>
-            </div>
-          </div>
-
-          <!-- Timer Selector -->
-          <div class="options-group">
-            <div class="options-label">Timer</div>
-            <div class="options-segmented" id="optTimer">
-              <div class="options-item active" data-val="0">Off</div>
-              <div class="options-item" data-val="3">3s</div>
-              <div class="options-item" data-val="5">5s</div>
-              <div class="options-item" data-val="10">10s</div>
-            </div>
-          </div>
-
-          <!-- Mirror Toggle Option -->
-          <div class="options-group">
-            <div class="options-label">Mirror Front Camera</div>
-            <div class="options-segmented" id="optMirror">
-              <div class="options-item active" data-val="on">On</div>
-              <div class="options-item" data-val="off">Off</div>
-            </div>
-          </div>
-
-          <button class="options-done-btn" id="btnCloseOptions">Done</button>
-        </div>
-
-        <!-- iOS Camera Permissions Error Overlay -->
-        <div class="permission-modal" id="permissionModal">
-          <div class="ios-alert-box">
-            <div class="ios-alert-title">"Camera" Would Like to Access the Camera</div>
-            <div class="ios-alert-desc">Please grant camera access permissions in your browser settings to take photos and record videos.</div>
-            <button class="ios-alert-btn" id="btnRetryPermission">Try Again</button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- Hardware Home Button -->
-    <div class="home-button">
-      <div class="home-button-icon"></div>
-    </div>
-  </div>
-
-  <!-- iOS PHOTO ALBUM & GALLERY MODAL -->
-  <div class="gallery-modal" id="galleryModal">
-    <div class="gallery-card">
-      <div class="gallery-header">
-        <div class="gallery-title" id="galleryTitle">Camera Roll (0)</div>
-        <button class="bar-btn" id="btnCloseGallery">Done</button>
-      </div>
-      <div class="gallery-grid" id="galleryGrid">
-        <!-- Photo thumbnails will be rendered dynamically here -->
-      </div>
-      <div class="gallery-footer">
-        <button class="action-btn-sm primary" id="btnSaveSelected">Save Selected</button>
-        <button class="action-btn-sm" id="btnDeleteSelected">Delete</button>
-        <button class="action-btn-sm" id="btnSelectAll">Select All</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Photo Detail Viewer Modal -->
-  <div class="photo-viewer-modal" id="photoViewerModal">
-    <div class="gallery-header" style="width: 100%; border-radius: 6px;">
-      <div class="gallery-title">Photo Preview</div>
-      <button class="bar-btn" id="btnCloseViewer">Back</button>
-    </div>
-    <div class="viewer-img-container">
-      <img id="viewerImage" src="" alt="Detailed Photo">
-    </div>
-    <div class="viewer-footer">
-      <button class="action-btn-sm primary" id="btnViewerSave">Save</button>
-      <button class="action-btn-sm" id="btnViewerDelete" style="background: linear-gradient(to bottom, #aa2222, #771111); border-color: #550000;">Delete</button>
-    </div>
-  </div>
-
-  <!-- Recorded Video Preview Modal -->
-  <div class="video-modal" id="videoModal">
-    <div class="video-preview-card">
-      <video id="recordedVideo" controls playsinline></video>
-    </div>
-    <div class="action-btn-group" style="width: 260px;">
-      <button class="action-btn" id="btnReplayVideo">Replay</button>
-      <button class="action-btn" id="btnDownloadVideo">Download</button>
-      <button class="action-btn" id="btnRetakeVideo">Retake</button>
-    </div>
-  </div>
-
-  <!-- Hidden Offscreen Canvas for Pipeline Render -->
-  <canvas id="hiddenCanvas" style="display:none;"></canvas>
-
-  <script src="script.js"></script>
-</body>
-</html>
+  // ... (deleteSinglePhoto, deleteSelectedPhotos, toggleSelectAll 등 나머지 메서드는 동일) ...
+}
